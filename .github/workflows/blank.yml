@@ -1,0 +1,30 @@
+pip install tweepy
+import tweepy
+
+# Set up Twitter API credentials
+api_key = "YOUR_API_KEY"
+api_secret = "YOUR_API_SECRET"
+access_token = "YOUR_ACCESS_TOKEN"
+access_token_secret = "YOUR_ACCESS_TOKEN_SECRET"
+
+# Authenticate with the Twitter API
+auth = tweepy.OAuthHandler(api_key, api_secret)
+auth.set_access_token(access_token, access_token_secret)
+api = tweepy.API(auth)
+
+# Define keywords to search for Land NFTs
+keywords = ["#NFTLand", "#DigitalLand", "#NFTProperty"]
+
+# Collect tweets
+def get_tweets(keyword, count=100):
+    tweets = tweepy.Cursor(api.search_tweets, q=keyword, lang="en").items(count)
+    return [{"text": tweet.text, "user": tweet.user.screen_name, "created_at": tweet.created_at} for tweet in tweets]
+
+# Fetch tweets with each keyword
+all_tweets = []
+for keyword in keywords:
+    all_tweets.extend(get_tweets(keyword))
+
+# Print or save tweets
+for tweet in all_tweets:
+    print(tweet)

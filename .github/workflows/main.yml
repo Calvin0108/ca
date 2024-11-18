@@ -1,93 +1,36 @@
-name: Weibo Data Scraper
+import os
+import subprocess
+import json
 
-on:
-  workflow_dispatch:  # Manual trigger
-  schedule:
-    - cron: '0 0 * * *'  # Scheduled run at midnight daily
+# Step 1: Set up configuration for weiboSpider in config.json
+config_data = {
+    "keyword_list": ["数字主权", "网络主权", "数据主权"],  # Chinese terms for "digital sovereignty"
+    "since_date": "2024-01-01",  # Starting date for posts
+    "end_date": "2024-12-31",  # Ending date for posts
+    "output_format": ["csv"],  # Save output as CSV
+    "output_dir": "./weibo_output"  # Directory to store the output
+}
 
-jobs:
-  scrape-weibo:
-    runs-on: ubuntu-latest
+# Write the configuration to config.json
+config_path = "./config.json"
+with open(config_path, 'w', encoding='utf-8') as config_file:
+    json.dump(config_data, config_file, ensure_ascii=False, indent=4)
 
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v2
+print(f"Configuration saved to {config_path}")
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.8'
+# Step 2: Run weiboSpider using the generated config.json
+try:
+    # Run weiboSpider with the custom configuration
+    subprocess.run(["python3", "-m", "weibo_spider", "--config_path", config_path], check=True)
+    print("weiboSpider ran successfully.")
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
-          python -m pip install --upgrade pip
-          pip install selenium webdriver-manager
+except subprocess.CalledProcessError as e:
+    print(f"An error occurred while running weiboSpider: {e}")
 
-      - name: Run Xvfb and Weibo Scraper
-        env:
-          WEIBO_USERNAME: ${{ secrets.WEIBO_USERNAME }}
-          WEIBO_PASSWORD: ${{ secrets.WEIBO_PASSWORD }}
-        run: |
-          # Start Xvfb
-          Xvfb :99 -screen 0 1920x1080x16 &
+# Step 3: Check for output
+output_dir = config_data["output_dir"]
 
-          # Export display environment variable
-          export DISPLAY=:99
-
-          # Run the Weibo scraper
-          python -c "
-          from selenium import webdriver
-          from selenium.webdriver.common.by import By
-          from selenium.webdriver.chrome.service import Service
-          from selenium.webdriver.chrome.options import Options
-          from webdriver_manager.chrome import ChromeDriverManager
-          import time
-
-          # Set up Chrome WebDriver with options
-          options = Options()
-          options.add_argument('--no-sandbox')
-          options.add_argument('--disable-dev-shm-usage')
-          options.add_argument('--headless')
-          driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-
-          try:
-              # Open Weibo login page
-              driver.get('https://weibo.com/login.php')
-              time.sleep(2)  # Wait for page to load
-
-              # Input username and password
-              driver.find_element(By.ID, 'loginname').send_keys('${{ secrets.WEIBO_USERNAME }}')
-              driver.find_element(By.NAME, 'password').send_keys('${{ secrets.WEIBO_PASSWORD }}')
-              driver.find_element(By.XPATH, '//a[@action-type="btn_submit"]').click()
-              time.sleep(5)  # Wait for login to process
-
-              # Check if login was successful
-              if '我的首页' in driver.page_source:
-                  print('Login successful!')
-
-                  # Search for a topic, e.g., "digital sovereignty" in Chinese
-                  search_url = 'https://s.weibo.com/weibo?q=数字主权'
-                  driver.get(search_url)
-                  time.sleep(3)
-
-                  # Scrape post data
-                  posts = []
-                  elements = driver.find_elements(By.CLASS_NAME, 'card-wrap')
-                  for element in elements:
-                      try:
-                          text = element.find_element(By.CLASS_NAME, 'txt').text
-                          posts.append({'text': text})
-                      except:
-                          continue
-
-                  # Print collected posts
-                  print('Collected Weibo posts:', posts)
-
-              else:
-                  print('Login failed.')
-
-          finally:
-              driver.quit()
-          "
+if os.path.exists(output_dir):
+    print(f"Output saved in {output_dir}.")
+else:
+    print("No output found. Check configuration and try again.")

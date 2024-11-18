@@ -1,9 +1,9 @@
 name: Weibo Data Scraper
 
 on:
-  workflow_dispatch:  # Allows manual trigger
+  workflow_dispatch:  # Manual trigger
   schedule:
-    - cron: '0 0 * * *'  # Run daily at midnight
+    - cron: '0 0 * * *'  # Scheduled run at midnight daily
 
 jobs:
   scrape-weibo:
@@ -36,7 +36,7 @@ jobs:
           # Export display environment variable
           export DISPLAY=:99
 
-          # Run the scraper
+          # Run the Weibo scraper
           python -c "
           from selenium import webdriver
           from selenium.webdriver.common.by import By
@@ -45,7 +45,7 @@ jobs:
           from webdriver_manager.chrome import ChromeDriverManager
           import time
 
-          # Set up Selenium WebDriver with Chrome options
+          # Set up Chrome WebDriver with options
           options = Options()
           options.add_argument('--no-sandbox')
           options.add_argument('--disable-dev-shm-usage')
@@ -87,12 +87,7 @@ jobs:
 
               else:
                   print('Login failed.')
-          
-          finally:
-              driver.quit()
-          "
 
-          
           finally:
               driver.quit()
           "

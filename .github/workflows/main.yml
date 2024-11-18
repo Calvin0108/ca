@@ -4,7 +4,7 @@ import json
 
 # Step 1: Set up configuration for weiboSpider in config.json
 config_data = {
-    "keyword_list": ["数字主权", "网络主权", "数据主权"],  # Chinese terms for "digital sovereignty"
+    "keyword_list": ["数字主权", "网络主权", "数据主权"]
     "since_date": "2024-01-01",  # Starting date for posts
     "end_date": "2024-12-31",  # Ending date for posts
     "output_format": ["csv"],  # Save output as CSV

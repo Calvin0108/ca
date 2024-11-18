@@ -9,12 +9,6 @@ jobs:
   scrape-weibo:
     runs-on: ubuntu-latest
 
-    services:
-      xvfb:
-        image: "selenium/standalone-chrome:latest"  # Use a Selenium Chrome container
-        options: > 
-          --shm-size 2g  # Shared memory size for Chrome
-
     steps:
       - name: Check out the repository
         uses: actions/checkout@v2
@@ -26,14 +20,23 @@ jobs:
 
       - name: Install dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
           python -m pip install --upgrade pip
           pip install selenium webdriver-manager
 
-      - name: Run Weibo scraper
+      - name: Run Xvfb and Weibo Scraper
         env:
           WEIBO_USERNAME: ${{ secrets.WEIBO_USERNAME }}
           WEIBO_PASSWORD: ${{ secrets.WEIBO_PASSWORD }}
         run: |
+          # Start Xvfb
+          Xvfb :99 -screen 0 1920x1080x16 &
+
+          # Export display environment variable
+          export DISPLAY=:99
+
+          # Run the scraper
           python -c "
           from selenium import webdriver
           from selenium.webdriver.common.by import By
@@ -44,9 +47,9 @@ jobs:
 
           # Set up Selenium WebDriver with Chrome options
           options = Options()
-          options.headless = True
           options.add_argument('--no-sandbox')
           options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--headless')
           driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
           try:
@@ -84,6 +87,11 @@ jobs:
 
               else:
                   print('Login failed.')
+          
+          finally:
+              driver.quit()
+          "
+
           
           finally:
               driver.quit()

@@ -1,0 +1,72 @@
+import os
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+
+# Set up Selenium options
+options = Options()
+options.headless = False  # Run in non-headless mode for debugging
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36")
+
+# Replace 'YOUR_WEIBO_USERNAME' and 'YOUR_WEIBO_PASSWORD' with your credentials or use environment variables
+USERNAME = os.getenv("WEIBO_USERNAME") or "YOUR_WEIBO_USERNAME"
+PASSWORD = os.getenv("WEIBO_PASSWORD") or "YOUR_WEIBO_PASSWORD"
+
+# Initialize the WebDriver
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+def weibo_login():
+    # Navigate to the Weibo login page
+    driver.get("https://weibo.com/login.php")
+    
+    # Print the page source for debugging purposes
+    print(driver.page_source)
+    driver.save_screenshot("login_page_initial.png")
+
+    try:
+        # Wait for username field and enter the username
+        username_field = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.ID, "loginname"))
+        )
+        username_field.send_keys(USERNAME)
+        
+        # Wait for password field and enter the password
+        password_field = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.NAME, "password"))
+        )
+        password_field.send_keys(PASSWORD)
+        
+        # Wait for and click the login button
+        login_button = WebDriverWait(driver, 20).until(
+            EC.element_to_be_clickable((By.XPATH, '//div[@class="info_list login_btn"]/a'))
+        )
+        login_button.click()
+        
+        # Wait until the main page loads to confirm login
+        WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, '//div[contains(@class, "nav_main")]'))
+        )
+        print("Login successful.")
+    
+    except Exception as e:
+        print("An error occurred during login:", e)
+        driver.save_screenshot("login_error.png")  # Save a screenshot on error
+        driver.quit()
+        return False
+    
+    return True
+
+# Run the login function
+if weibo_login():
+    print("Weibo login was successful, proceeding with scraping...")
+    # Add further actions or scraping code here
+else:
+    print("Failed to log in to Weibo.")
+
+driver.quit()  # Close the browser when done
